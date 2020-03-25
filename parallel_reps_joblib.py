@@ -9,23 +9,17 @@ Example uses joblib Parallel with 'loky' backend for
 parallel execution of simulation replications.
 
 """
-
-
 import numpy as np
 from joblib import Parallel, delayed
-
 from mms import MMSQueueModel, Scenario
             
 def multiple_replications(scenario, run_length, warm_up=0, n_reps=5, n_jobs=1):
     '''
-    Runs multiple indepdent replications of the simulation model
-    #based on example: 
-    
+    Runs multiple indepdent replications of the simulation model    
     '''
     #res = [single_run(scenario, run_length, warm_up) for _ in range(n_reps)]
     res = Parallel(n_jobs=n_jobs)(delayed(single_run)(scenario, run_length, 
                    warm_up) for _ in range(n_reps))
-    
     return res
         
 def single_run(scenario, run_length, warm_up=0):
