@@ -4,17 +4,25 @@
 Created on Tue Mar 24 22:06:15 2020
 
 @author: thomasmonks
+
+Example uses joblib Parallel with 'loky' backend for 
+parallel execution of simulation replications.
+
 """
 
-import concurrent.futures
 import simpy
 import random
 import numpy as np
 import itertools
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+from joblib import Parallel, delayed
        
             
 class Entity(object):
+    '''
+    Entity that moves through queuing and service
+    in the model.
+    '''
     def __init__(self, env, servers, mean_delay):
         self.env = env
         self.servers = servers
@@ -93,19 +101,22 @@ class Scenario:
     
     
 
-def multiple_replications(scenario, run_length, warm_up=0, n_reps=5):
+def multiple_replications(scenario, run_length, warm_up=0, n_reps=5, n_jobs=1):
     '''
     Runs multiple indepdent replications of the simulation model
+    #based on example: 
+    
     '''
-    rep_results = []
-    for rep in range(n_reps):
-        model = MMSQueueModel(scenario)
-        model.run(run_length, warm_up)
-        mean_q = np.array(model.q_lengths).mean()
-        rep_results.append(mean_q)
+    #res = [single_run(scenario, run_length, warm_up) for _ in range(n_reps)]
+    res = Parallel(n_jobs=n_jobs)(delayed(single_run)(scenario, run_length, 
+                   warm_up) for _ in range(n_reps))
+    
+    return res
         
-    return rep_results
-        
+def single_run(scenario, run_length, warm_up=0):
+    model = MMSQueueModel(scenario)
+    model.run(run_length, warm_up)
+    return np.array(model.q_lengths).mean()
 
 
 if __name__ == '__main__':
@@ -116,8 +127,11 @@ if __name__ == '__main__':
     RUN_LENGTH = 1440
     
     base_scenario = Scenario()
-    results = multiple_replications(base_scenario, RUN_LENGTH, n_reps=100)
+    results = multiple_replications(base_scenario, RUN_LENGTH, n_reps=100, 
+                                    n_jobs=-1)
     print(np.array(results).mean())
+    print(np.array(results).std())
+   
 
         
     
