@@ -36,7 +36,7 @@ if __name__ == '__main__':
     RUN_LENGTH = 1440
     
     base_scenario = Scenario()
-    results = multiple_replications(base_scenario, RUN_LENGTH, n_reps=1000, 
+    results = multiple_replications(base_scenario, RUN_LENGTH, n_reps=10, 
                                     n_jobs=-1)
     print(np.array(results).mean())
     print(np.array(results).std())

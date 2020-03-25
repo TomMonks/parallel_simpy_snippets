@@ -10,11 +10,9 @@ Model classes for MMS queue
 """
 
 import simpy
-import random
-import numpy as np
 import itertools
 from dataclasses import dataclass
-
+from numpy.random import RandomState
        
             
 class Entity(object):
@@ -22,11 +20,13 @@ class Entity(object):
     Entity that moves through queuing and service
     in the model.
     '''
-    def __init__(self, env, servers, mean_delay):
+    def __init__(self, env, servers, mean_delay, random_state=None):
         self.env = env
         self.servers = servers
         self.mean_delay = mean_delay
         self.wait = 0.0
+        self._rand = RandomState(seed=random_state)
+        
         
     def enter_queue(self):
         self.arrive = self.env.now
@@ -34,7 +34,7 @@ class Entity(object):
             yield server
             self.wait = self.env.now - self.arrive
             
-            delay = random.expovariate(1 / self.mean_delay) 
+            delay = self._rand.exponential(1 / self.mean_delay)
             yield self.env.timeout(delay)
             
             
@@ -67,13 +67,14 @@ class MMSQueueModel(object):
         self.mean_arrivals = args.mean_arrivals
         self.mean_delay = args.mean_delay
         self.servers = simpy.Resource(self.env, capacity=args.n_servers)
-        
         self.entities = []
+        self._rand = RandomState()
+        
         
     def source(self, warm_up):
         """Create new entities until the sim time reaches end"""
         while True:
-            iat = random.expovariate(self.mean_arrivals)
+            iat = self._rand.exponential(self.mean_arrivals)
             yield self.env.timeout(iat) 
             
             arrival = Entity(self.env, self.servers, self.mean_delay)
